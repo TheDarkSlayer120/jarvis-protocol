@@ -38,9 +38,24 @@ class JARVIS:
 
         # If API key is not set, prompt user
         if not api_key or api_key.endswith('_error'): # Check if API key is missing or  (ends with _error)
-            print("Error: Missing or invalid API key in .env file.")
-            api_key = input("Enter your Gemini API key, or press Enter to skip: ").strip() 
-            if api_key: # If user provides a new API key
+            print("Error: Missing or issue with API key in .env file.")
+            api_key = input("Enter your Gemini API key, press Enter to skip, or type ignore to remove error marker: ").strip() 
+            
+            if api_key.lower() == 'ignore': # If user types ignore, remove the error marker
+                # read the .env file and remove the _error suffix from the API key
+                with open('.env', 'r+') as f: # open .env file and read the contents
+                    lines = f.readlines()
+                    f.seek(0)
+                    for line in lines: # iterate through each line
+                        if line.startswith('GEMINI_API_KEY='): # If line starts with GEMINI_API_KEY=
+                            f.write(line.replace('_error', '')) # Remove the _error suffix
+                    f.truncate() # Remove any remaining old data
+                    
+                # Reload .env data
+                load_dotenv(override=True) 
+                api_key = os.getenv('GEMINI_API_KEY') 
+
+            elif api_key: # If user provides a new API key
                 with open('.env', 'w') as f: # open .env file and write the new API key
                     f.write(f'GEMINI_API_KEY={api_key}')
             else: # otherwise, skip Gemini setup
@@ -56,20 +71,25 @@ class JARVIS:
             except:
                 self.model = genai.GenerativeModel('gemini-2.5-pro')
             
+            
+            # check for network connectivity via a ping test
+            try:
+                subprocess.check_output(['ping', '-c', '3', '1.1.1.1'], stderr=subprocess.DEVNULL)
+            except subprocess.CalledProcessError: # On fail raise exception
+                raise Exception("Network connectivity issue")
+                
             # Check if api key is valid by performing a test query
             query_test = self.model.generate_content(
                 "What is the capital of France?"
             )
-            
             if query_test: # If the query returns a response, the API key is valid
                 self.ai_enabled = True 
                 print("Successfully connected to Gemini API")
             else: # If the query fails, assume the API key is invalid
-                print("Gemini API test query failed.")
-                raise Exception("Gemini API key is invalid or not working.") 
+                raise Exception("Gemini Init Error: Test query failed, invalid API Key or other issue") 
             
         except Exception as e: # Catch any errors during initialization
-            print(f"Gemini Init Error: Invalid API Key or other issue. Running in offline mode.")
+            print(f"An exception occurred during Gemini initialization: {e}, running in offline mode.")
             self.ai_enabled = False 
             with open('.env', 'w') as f: # open .env file and append with _error at end of file for next program run
                 f.write(f'GEMINI_API_KEY={api_key}_error')
