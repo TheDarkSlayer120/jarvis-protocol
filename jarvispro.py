@@ -10,8 +10,6 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 import os
 
-print("test")
-
 class JARVIS:
     def __init__(self, root):
         self.root = root
@@ -32,28 +30,49 @@ class JARVIS:
         self.root.configure(bg='#0a0a0a')
         self.root.option_add('*Font', 'Helvetica 12')
 
+
     def setup_gemini(self):
         """Initialize Gemini AI with better error handling"""
-        load_dotenv()
-        api_key = os.getenv('GEMINI_API_KEY')
-        
-        if not api_key:
-            print("Error: Missing API key in .env file")
-            self.ai_enabled = False
-            return
-            
+        load_dotenv() # Load environment variables from .env file
+        api_key = os.getenv('GEMINI_API_KEY') # Get API key from environment variable
+
+        # If API key is not set, prompt user
+        if not api_key or api_key.endswith('_error'): 
+            print("Error: Missing or invalid API key in .env file.")
+            api_key = input("Enter your Gemini API key, or press Enter to skip: ").strip()
+            if api_key:
+                with open('.env', 'w') as f:
+                    f.write(f'GEMINI_API_KEY={api_key}')
+            else:
+                print("Skipping Gemini API setup. Running in offline mode.")
+                self.ai_enabled = False
+                return
+
         try:
             genai.configure(api_key=api_key)
             # Try the newest model first, then fallback
             try:
-                self.model = genai.GenerativeModel('gemini-1.5-flash')
+                self.model = genai.GenerativeModel('gemini-2.5-flash')
             except:
-                self.model = genai.GenerativeModel('gemini-1.0-pro')
-            self.ai_enabled = True
-            print("Successfully connected to Gemini API")
-        except Exception as e:
-            print(f"Gemini Init Error: {e}")
+                self.model = genai.GenerativeModel('gemini-2.5-pro')
+            
+            # check if api key is valid by performing a test query
+            query_test = self.model.generate_content(
+                "What is the capital of France?"
+            )
+            
+            if query_test: # If the query returns a response, the API key is valid
+                self.ai_enabled = True 
+                print("Successfully connected to Gemini API")
+            else:
+                print("Gemini API test query failed.")
+                raise Exception("Gemini API key is invalid or not working.") 
+            
+        except Exception as e: # Catch any errors during initialization
+            print(f"Gemini Init Error: Invalid API Key or other issue. Running in offline mode.")
             self.ai_enabled = False
+            with open('.env', 'w') as f: # open .env file and append with _error at end of file
+                f.write(f'GEMINI_API_KEY={api_key}_error')
 
     def create_gui(self):
         """Create interface components"""
