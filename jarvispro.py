@@ -76,7 +76,9 @@ class JARVIS:
             try:
                 subprocess.check_output(['ping', '-c', '3', '1.1.1.1'], stderr=subprocess.DEVNULL)
             except subprocess.CalledProcessError: # On fail raise exception
-                raise Exception("Network connectivity issue")
+                print("Network connectivity issue, running in offline mode.")
+                self.ai_enabled = False 
+                return
                 
             # Check if api key is valid by performing a test query
             query_test = self.model.generate_content(
