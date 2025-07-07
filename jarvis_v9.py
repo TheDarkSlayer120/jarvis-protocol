@@ -19,6 +19,7 @@ import threading
 import json
 import queue
 from PIL import Image, ImageTk
+import urllib.parse
 
 # Configure logging
 logging.basicConfig(
@@ -320,6 +321,21 @@ class JARVIS:
                 "I've stored that information for you.",
                 "Consider it remembered.",
                 "Added to my memory banks."
+            ],
+            "translation": [
+                "The translation is: {}",
+                "In the requested language: {}",
+                "Translated: {}"
+            ],
+            "app_list": [
+                "Here are the applications I can launch: {}",
+                "Registered applications: {}",
+                "Available apps: {}"
+            ],
+            "search": [
+                "Searching for '{}'...",
+                "Looking up '{}'...",
+                "Querying '{}'..."
             ]
         }
 
@@ -445,7 +461,7 @@ class JARVIS:
             self.root.after(0, lambda: self.jarvis_speak("Voice system error. Please check your microphone."))
 
     def process_voice_command(self, command):
-        """Process voice commands with enhanced memory capabilities"""
+        """Process voice commands with enhanced capabilities"""
         # Handle memory-related commands first
         if "my name is" in command:
             name = command.split("my name is")[1].strip()
@@ -522,6 +538,33 @@ class JARVIS:
         if "show me the" in command and "dictionary" in command:
             dict_name = command.split("show me the")[1].replace("dictionary", "").strip()
             self.show_custom_dict(dict_name)
+            return
+
+        # New feature: Google Search
+        if any(cmd in command for cmd in ["search google for ", "google ", "look up "]):
+            query = command.split("for ")[-1] if "for " in command else command.split("google ")[-1]
+            self.google_search(query)
+            return
+
+        # New feature: YouTube Search
+        if any(cmd in command for cmd in ["search youtube for ", "youtube ", "play "]):
+            query = command.split("for ")[-1] if "for " in command else command.split("youtube ")[-1]
+            self.youtube_search(query)
+            return
+
+        # New feature: Translation
+        if any(cmd in command for cmd in ["translate ", "how do you say "]):
+            parts = command.split("translate ")[-1].split(" to ")
+            if len(parts) == 2:
+                text, lang = parts
+                self.translate_text(text.strip(), lang.strip())
+            else:
+                self.jarvis_speak("Please specify text and target language (e.g., 'translate hello to Spanish').")
+            return
+
+        # New feature: List Registered Apps
+        if any(cmd in command for cmd in ["list apps", "what apps can you open", "available applications"]):
+            self.list_registered_apps()
             return
 
         # Handle special cases
@@ -750,6 +793,66 @@ class JARVIS:
                     self.user_name = self.user_memory['personal_info']['name']
         except Exception as e:
             logging.error(f"Error loading memory: {e}")
+
+    # --- New Methods for Advanced Features ---
+    def google_search(self, query):
+        """Open a browser with Google search results"""
+        search_url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
+        self.jarvis_speak(random.choice(self.responses["search"]).format(query))
+        webbrowser.open(search_url)
+
+    def youtube_search(self, query):
+        """Open a browser with YouTube search results"""
+        search_url = f"https://www.youtube.com/results?search_query={urllib.parse.quote(query)}"
+        self.jarvis_speak(f"Searching YouTube for {query}...")
+        webbrowser.open(search_url)
+
+    def translate_text(self, text, target_lang):
+        """Translate text using Gemini AI (fallback to basic if offline)"""
+        if self.ai_enabled:
+            try:
+                response = self.model.generate_content(
+                    f"Translate '{text}' to {target_lang}. Return only the translation."
+                )
+                translation = response.text.strip()
+                self.jarvis_speak(random.choice(self.responses["translation"]).format(translation))
+            except Exception as e:
+                logging.error(f"Translation error: {e}")
+                self.jarvis_speak("AI translation failed. Using basic fallback...")
+                self.basic_translation(text, target_lang)
+        else:
+            self.basic_translation(text, target_lang)
+
+    def basic_translation(self, text, target_lang):
+        """Fallback translation for common phrases (expand as needed)"""
+        translations = {
+            "hello": {
+                "spanish": "hola",
+                "french": "bonjour",
+                "german": "hallo"
+            },
+            "goodbye": {
+                "spanish": "adiós",
+                "french": "au revoir",
+                "german": "auf wiedersehen"
+            }
+        }
+        
+        text_lower = text.lower()
+        lang_lower = target_lang.lower()
+        
+        if text_lower in translations and lang_lower in translations[text_lower]:
+            self.jarvis_speak(random.choice(self.responses["translation"]).format(
+                translations[text_lower][lang_lower]
+            ))
+        else:
+            self.jarvis_speak(f"I don't have a translation for '{text}' to {target_lang} in my database.")
+
+    def list_registered_apps(self):
+        """List all registered applications JARVIS can launch"""
+        apps = ", ".join(self.applications.keys())
+        self.jarvis_speak(random.choice(self.responses["app_list"]).format(apps))
+        self.update_chat("JARVIS", f"Registered Applications:\n- " + "\n- ".join(self.applications.keys()), 'system')
 
 if __name__ == "__main__":
     try:
