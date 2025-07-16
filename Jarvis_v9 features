@@ -1,0 +1,75 @@
+1. Voice Control & Speech Recognition
+
+Voice command processing with wake words ("Jarvis", "Hey Jarvis")
+Background noise adjustment for better recognition
+Microphone initialization check with error handling
+Real-time voice feedback with British male accent
+Toggle voice control on/off
+
+2. Text-to-Speech (TTS)
+
+British-accented voice responses via pyttsx3
+Dynamic speech rate and volume control
+Automatic muting during speech to avoid feedback
+
+3. AI Integration (Gemini AI)
+
+Supports multiple Gemini model versions (fallback if one fails)
+Context-aware responses in JARVIS's signature style (technical + witty)
+Offline mode with limited functionality if AI is unavailable
+
+4. Memory System
+
+Personal Info Storage: Remember user details (e.g., name, birthday)
+Custom Lists: Create/manage lists (e.g., "Add milk to shopping list")
+Custom Dictionaries: Store key-value pairs (e.g., "Add 'project deadline' as 'June 15'")
+Auto-save/load to jarvis_memory.json
+
+5. Application Launcher
+
+Cross-platform app support (Windows/Linux/Mac):
+Calculator, Notepad, Browser, Spotify, Terminal, File Explorer
+Error handling for missing apps
+
+6. System Diagnostics
+
+Real-time monitoring of:
+CPU/RAM usage
+Network status
+Voice/TTS/AI system health
+Memory stats (lists, dictionaries, etc.)
+
+7. GUI Features
+
+Modern dark-themed interface with orange accents
+Timestamped chat display with colored tags (user/JARVIS/system)
+Status bar showing AI/voice/CPU/RAM status
+Text input with voice toggle button
+
+8. Predefined Responses
+
+Context-aware replies for:
+Greetings, farewells, gratitude, apologies
+Time/date queries
+Diagnostics and app launches
+
+9. Utility Functions
+
+Cross-platform OS detection
+Error logging to jarvis.log
+Robust exception handling with user alerts
+
+10. Interactive Commands
+
+Examples:
+"What time is it?" → Speaks current time
+"Open Spotify" → Launches app
+"Remember that my birthday is June 5th" → Stores info
+"Show me the shopping list" → Displays list
+"Run diagnostics" → System health report
+
+11. Extras
+
+Boot sequence with startup messages
+Queue-based command processing
+Threaded voice listener to avoid GUI freeze
